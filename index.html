@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Seba FitPro | Periodización & Autoregulación</title>
+    <meta name="description" content="Entrenamiento con periodización ondulante y autoregulación (RIR / Readiness). Registra series, descansos, récords y comparte con tu entrenador o IA.">
+    <meta name="theme-color" content="#09090b">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FitPro">
+    <meta property="og:title" content="Seba FitPro">
+    <meta property="og:description" content="Periodización No Lineal & Autoregulación Inteligente">
+    <meta property="og:image" content="icons/icon-512.png">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <script src="vendor/chart.umd.min.js" defer></script>
+    <script src="js/data.js" defer></script>
+    <script src="js/app.js" defer></script>
+</head>
+<body class="min-h-screen flex flex-col pb-32 md:pb-28 selection:bg-emerald-500/30 selection:text-emerald-200">
+
+    <noscript><div class="p-4 text-center text-amber-300 text-sm">Esta app necesita JavaScript activado.</div></noscript>
+
+    <!-- Toasts -->
+    <div id="toastContainer" class="fixed bottom-28 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-4 z-[60] flex flex-col gap-2 pointer-events-none max-w-sm w-[92%] sm:w-full" aria-live="polite"></div>
+
+    <!-- Cabecera -->
+    <header class="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-zinc-950 font-extrabold text-xl shadow-lg shadow-emerald-500/20">SF</div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-base md:text-lg tracking-tight text-white">Seba FitPro</h1>
+                        <span id="roleBadge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">Atleta</span>
+                    </div>
+                    <p class="text-xs text-zinc-400 hidden sm:block">Periodización No Lineal & Autoregulación</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <div class="relative">
+                    <select id="profileSelect" aria-label="Seleccionar atleta" onchange="switchProfile(this.value)" class="appearance-none bg-zinc-900 border border-zinc-700/80 text-zinc-200 text-xs md:text-sm rounded-xl pl-3 pr-8 py-2 font-medium focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[160px]"></select>
+                    <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 text-xs">▼</span>
+                </div>
+                <button onclick="openProfileModal()" title="Configurar Perfil / Atletas" aria-label="Configurar perfil" class="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-300 transition">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
+                <button onclick="toggleRole()" id="roleToggleBtn" class="px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-xs font-semibold text-cyan-400 transition flex items-center gap-1.5">
+                    <span>👨‍🏫</span><span class="hidden sm:inline">Modo Entrenador</span>
+                </button>
+                <button onclick="openSyncModal()" id="syncBtn" class="px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-xs font-semibold text-emerald-400 transition flex items-center gap-1.5">
+                    <span>🤖</span><span>Sync / Respaldo</span>
+                </button>
+            </div>
+        </div>
+
+        <nav class="max-w-6xl mx-auto px-4 flex gap-1 overflow-x-auto no-scrollbar border-t border-zinc-900" role="tablist">
+            <button onclick="switchTab('workout')" id="tab-workout" role="tab" aria-selected="true" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-emerald-500 text-emerald-400 whitespace-nowrap transition">🏋️ Entrenamiento</button>
+            <button onclick="switchTab('analytics')" id="tab-analytics" role="tab" aria-selected="false" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 whitespace-nowrap transition">📈 Progreso & 1RM</button>
+            <button onclick="switchTab('history')" id="tab-history" role="tab" aria-selected="false" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 whitespace-nowrap transition">📋 Historial & Feedback</button>
+            <button onclick="switchTab('guide')" id="tab-guide" role="tab" aria-selected="false" class="tab-btn px-4 py-2.5 text-xs md:text-sm font-semibold border-b-2 border-transparent text-zinc-400 hover:text-zinc-200 whitespace-nowrap transition">🧠 Guía</button>
+        </nav>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 pt-5 space-y-6">
+
+        <!-- VISTA 1: ENTRENAMIENTO -->
+        <section id="view-workout" class="space-y-6">
+            <div class="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 md:p-5 shadow-xl">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                    <div class="md:col-span-5 space-y-1.5">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-400 flex items-center justify-between gap-2">
+                            <span><span id="mesoLabel">Mesociclo #1</span> · 4 Semanas</span>
+                            <span id="weekRirTag" class="text-cyan-400 font-semibold">RIR 2-3</span>
+                        </label>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="selectWeek(1)" id="weekBtn-1" class="week-btn py-2 px-2 rounded-xl text-xs font-bold border transition text-center">S1 <span id="weekCheck-1" class="hidden text-emerald-400">✓</span><span class="block text-[9px] font-normal opacity-80">Acumul.</span></button>
+                            <button onclick="selectWeek(2)" id="weekBtn-2" class="week-btn py-2 px-2 rounded-xl text-xs font-bold border transition text-center">S2 <span id="weekCheck-2" class="hidden text-emerald-400">✓</span><span class="block text-[9px] font-normal opacity-80">Intensif.</span></button>
+                            <button onclick="selectWeek(3)" id="weekBtn-3" class="week-btn py-2 px-2 rounded-xl text-xs font-bold border transition text-center">S3 <span id="weekCheck-3" class="hidden text-emerald-400">✓</span><span class="block text-[9px] font-normal opacity-80">Pico</span></button>
+                            <button onclick="selectWeek(4)" id="weekBtn-4" class="week-btn py-2 px-2 rounded-xl text-xs font-bold border transition text-center">S4 <span id="weekCheck-4" class="hidden text-emerald-400">✓</span><span class="block text-[9px] font-normal opacity-80">Descarga</span></button>
+                        </div>
+                    </div>
+                    <div class="md:col-span-7 space-y-1.5">
+                        <label class="text-[11px] font-bold uppercase tracking-wider text-zinc-400">Sesión de Entrenamiento (Split 4 Días)</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                            <button onclick="selectDay(1)" id="dayBtn-1" class="day-btn relative py-2 px-2.5 rounded-xl text-xs font-bold border transition text-left"><span class="text-[10px] opacity-75 block">Día 1 <span id="dayCheck-1" class="hidden text-emerald-400">✓ hecho</span></span><span id="dayLabel-1">Torso A</span></button>
+                            <button onclick="selectDay(2)" id="dayBtn-2" class="day-btn relative py-2 px-2.5 rounded-xl text-xs font-bold border transition text-left"><span class="text-[10px] opacity-75 block">Día 2 <span id="dayCheck-2" class="hidden text-emerald-400">✓ hecho</span></span><span id="dayLabel-2">Pierna/Brazos A</span></button>
+                            <button onclick="selectDay(3)" id="dayBtn-3" class="day-btn relative py-2 px-2.5 rounded-xl text-xs font-bold border transition text-left"><span class="text-[10px] opacity-75 block">Día 3 <span id="dayCheck-3" class="hidden text-emerald-400">✓ hecho</span></span><span id="dayLabel-3">Torso B</span></button>
+                            <button onclick="selectDay(4)" id="dayBtn-4" class="day-btn relative py-2 px-2.5 rounded-xl text-xs font-bold border transition text-left"><span class="text-[10px] opacity-75 block">Día 4 <span id="dayCheck-4" class="hidden text-emerald-400">✓ hecho</span></span><span id="dayLabel-4">Pierna/Brazos B</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="phaseDescriptionBar" class="mt-4 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-300">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span id="phaseDescText"></span>
+                    </div>
+                    <div class="text-zinc-400 font-mono text-[11px]" id="sessionSummaryBadge">0/0 series completadas</div>
+                </div>
+                <div class="w-full h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
+                    <div id="sessionProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500" style="width:0%"></div>
+                </div>
+            </div>
+
+            <!-- Check-in (Readiness) -->
+            <div id="readinessCard" class="bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-950 border border-zinc-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">⚡</span>
+                            <h2 class="text-base md:text-lg font-bold text-white">Check-in Inicial (Readiness)</h2>
+                        </div>
+                        <p class="text-xs text-zinc-400 mt-0.5">Evalúa tu estado antes de levantar para recalcular cargas, reps y RIR dinámicamente.</p>
+                    </div>
+                    <button onclick="toggleReadinessBody()" id="toggleReadinessBtn" class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition">Ocultar Panel</button>
+                </div>
+
+                <div id="readinessBody" class="space-y-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="input-mood" class="text-xs font-semibold text-zinc-300">🧠 Estado de Ánimo</label>
+                                <span id="val-mood" class="text-sm font-bold text-emerald-400">4/5</span>
+                            </div>
+                            <input type="range" id="input-mood" min="1" max="5" value="4" oninput="updateReadiness()" class="w-full">
+                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>Bajo</span><span>Normal</span><span>Motivado</span></div>
+                        </div>
+                        <div class="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="input-energy" class="text-xs font-semibold text-zinc-300">🔋 Energía y Sueño</label>
+                                <span id="val-energy" class="text-sm font-bold text-emerald-400">4/5</span>
+                            </div>
+                            <input type="range" id="input-energy" min="1" max="5" value="4" oninput="updateReadiness()" class="w-full">
+                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>Agotado</span><span>Aceptable</span><span>A tope</span></div>
+                        </div>
+                        <div class="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="input-freshness" class="text-xs font-semibold text-zinc-300">🦾 Frescura Muscular</label>
+                                <span id="val-freshness" class="text-sm font-bold text-emerald-400">4/5</span>
+                            </div>
+                            <input type="range" id="input-freshness" min="1" max="5" value="4" oninput="updateReadiness()" class="w-full">
+                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>Muy adolorido</span><span>Leve fatiga</span><span>Recuperado</span></div>
+                        </div>
+                        <div class="bg-zinc-950/70 border border-zinc-800/80 rounded-xl p-3.5">
+                            <div class="flex justify-between items-center mb-2">
+                                <label for="input-potency" class="text-xs font-semibold text-zinc-300">🚀 Velocidad en Calentamiento</label>
+                                <span id="val-potency" class="text-sm font-bold text-emerald-400">4/5</span>
+                            </div>
+                            <input type="range" id="input-potency" min="1" max="5" value="4" oninput="updateReadiness()" class="w-full">
+                            <div class="flex justify-between text-[10px] text-zinc-500 mt-1"><span>Lenta/Pesada</span><span>Fluida</span><span>Explosiva</span></div>
+                        </div>
+                    </div>
+
+                    <div id="readinessResultBox" class="rounded-xl p-4 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
+                        <div class="flex items-start gap-3">
+                            <div id="readinessScoreCircle" class="w-12 h-12 rounded-xl flex items-center justify-center font-extrabold text-base shrink-0">80%</div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 id="readinessStatusTitle" class="font-bold text-sm md:text-base"></h3>
+                                    <span id="readinessBadge" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full"></span>
+                                </div>
+                                <p id="readinessAdvice" class="text-xs text-zinc-300 mt-1"></p>
+                            </div>
+                        </div>
+                        <button onclick="applyAutoregulationToSession()" class="w-full sm:w-auto shrink-0 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition shadow-lg shadow-emerald-500/20">Aplicar Ajuste a Cargas Hoy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banner Modo Entrenador -->
+            <div id="coachModeBanner" class="hidden bg-cyan-950/40 border border-cyan-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">👨‍🏫</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-cyan-300">Modo Entrenador Activo</h3>
+                        <p class="text-xs text-cyan-100/80">Edita nombre, series, reps objetivo, peso base, descanso e indicaciones técnicas. Reordena o elimina ejercicios.</p>
+                    </div>
+                </div>
+                <button onclick="openAddExerciseModal()" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs transition shrink-0">+ Añadir Ejercicio al Día</button>
+            </div>
+
+            <div id="exercisesContainer" class="space-y-4"></div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-white text-base">¿Terminaste los ejercicios de hoy?</h3>
+                    <p class="text-xs text-zinc-400 mt-0.5">Completa el Check-out para guardar tus marcas, detectar récords personales (PR) y avanzar a la siguiente sesión.</p>
+                </div>
+                <button onclick="openCheckoutModal()" id="checkoutBtn" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-zinc-950 font-extrabold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                    <span>🏁</span><span>Finalizar Rutina & Check-out</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- VISTA 2: PROGRESO -->
+        <section id="view-analytics" class="hidden space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <span class="text-xs text-zinc-400 block">Tonelaje Sesión Actual</span>
+                    <span id="kpi-tonnage" class="text-xl md:text-2xl font-extrabold text-white mt-1 block">0 kg</span>
+                    <span class="text-[11px] text-emerald-400 mt-1 block">Series completadas ✓</span>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <span class="text-xs text-zinc-400 block">Sesiones Completadas</span>
+                    <span id="kpi-sessions" class="text-xl md:text-2xl font-extrabold text-white mt-1 block">0</span>
+                    <span class="text-[11px] text-cyan-400 mt-1 block">En historial guardado</span>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <span class="text-xs text-zinc-400 block">Readiness Promedio</span>
+                    <span id="kpi-readiness" class="text-xl md:text-2xl font-extrabold text-white mt-1 block">--%</span>
+                    <span class="text-[11px] text-zinc-400 mt-1 block">Últimas 8 sesiones</span>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+                    <span id="kpi-key-label" class="text-xs text-zinc-400 block truncate">1RM Est. Press Banca</span>
+                    <span id="kpi-bench1rm" class="text-xl md:text-2xl font-extrabold text-emerald-400 mt-1 block">-- kg</span>
+                    <span class="text-[11px] text-zinc-400 mt-1 block">Fórmula Epley</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                        <div>
+                            <h3 class="font-bold text-white text-sm md:text-base">Evolución de 1RM Estimado</h3>
+                            <p class="text-xs text-zinc-400">Por sesión guardada (o proyección del mesociclo)</p>
+                        </div>
+                        <select id="chartExerciseSelect" aria-label="Ejercicio del gráfico" onchange="renderCharts()" class="bg-zinc-950 border border-zinc-700 text-xs text-zinc-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-500 max-w-full"></select>
+                    </div>
+                    <div class="h-64 w-full relative"><canvas id="oneRmChart"></canvas><p class="chart-fallback hidden absolute inset-0 flex items-center justify-center text-xs text-zinc-500">Gráfico no disponible</p></div>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+                    <div class="mb-4">
+                        <h3 class="font-bold text-white text-sm md:text-base">Tonelaje por Día de Rutina</h3>
+                        <p class="text-xs text-zinc-400">Semana seleccionada · real vs. planificado</p>
+                    </div>
+                    <div class="h-64 w-full relative"><canvas id="tonnageChart"></canvas><p class="chart-fallback hidden absolute inset-0 flex items-center justify-center text-xs text-zinc-500">Gráfico no disponible</p></div>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 overflow-hidden">
+                <h3 class="font-bold text-white text-base mb-1">Tabla de Fuerza Estimada (1RM) y Cargas Base</h3>
+                <p class="text-xs text-zinc-400 mb-4">Mejor serie completada del mesociclo o del historial.</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-400 uppercase text-[10px]">
+                                <th class="py-2.5 px-3">Día</th><th class="py-2.5 px-3">Ejercicio</th><th class="py-2.5 px-3">Mejor Serie</th><th class="py-2.5 px-3">1RM Estimado</th><th class="py-2.5 px-3">Sugerencia Próx.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="oneRmTableBody" class="divide-y divide-zinc-800/60"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-emerald-950/40 to-cyan-950/30 border border-emerald-500/30 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h3 class="font-bold text-white text-base">🔁 ¿Terminaste las 4 semanas?</h3>
+                    <p class="text-xs text-zinc-300 mt-0.5">Inicia un nuevo mesociclo: los pesos base se recalculan con tu rendimiento real (1RM ajustado por RIR, máx. ±5%).</p>
+                </div>
+                <button onclick="startNewMesocycle()" id="newMesoBtn" class="w-full sm:w-auto shrink-0 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition">Iniciar Nuevo Mesociclo</button>
+            </div>
+        </section>
+
+        <!-- VISTA 3: HISTORIAL -->
+        <section id="view-history" class="hidden space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Historial de Sesiones y Bitácora</h2>
+                    <p class="text-xs text-zinc-400">Check-ins, cargas levantadas, RPE final y notas del entrenador.</p>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button onclick="exportHistoryCSV()" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 font-semibold text-xs transition">⬇️ CSV Historial</button>
+                    <button onclick="copyFullHistoryReport()" id="copyHistoryBtn" class="px-4 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-400 font-semibold text-xs transition flex items-center gap-2"><span>📋</span><span>Copiar Todo el Historial para IA</span></button>
+                </div>
+            </div>
+            <div id="historyListContainer" class="space-y-4"></div>
+        </section>
+
+        <!-- VISTA 4: GUÍA -->
+        <section id="view-guide" class="hidden space-y-6">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2"><span>🧠</span><span>Arquitectura de Progresión No Lineal & Uso con IA</span></h2>
+                <p class="text-xs md:text-sm text-zinc-300 leading-relaxed">
+                    Esta aplicación implementa un modelo de <strong>Periodización Ondulante y Autoregulada (APRE / RIR)</strong>. En lugar de forzar subidas lineales rígidas que llevan al estancamiento o lesión, el sistema cruza la fase del mesociclo con tu estado fisiológico diario.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2">
+                        <h3 class="font-bold text-emerald-400 text-sm">1. Cálculo Autoregulado</h3>
+                        <ul class="text-xs text-zinc-300 space-y-1.5 list-disc pl-4">
+                            <li><strong>Readiness ≥ 80% (Óptimo):</strong> +2.5% de carga manteniendo el RIR objetivo de la semana.</li>
+                            <li><strong>Readiness 55% - 79% (Moderado):</strong> carga base planificada priorizando velocidad y pausa técnica.</li>
+                            <li><strong>Readiness &lt; 55% (Fatiga):</strong> -8% de carga y +1 RIR para evitar fatiga del SNC sin perder estímulo.</li>
+                            <li><strong>Nuevo mesociclo:</strong> el peso base se recalcula con el 1RM estimado (reps + RIR) de tus mejores series.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2">
+                        <h3 class="font-bold text-cyan-400 text-sm">2. Formatos con Entrenador e IA</h3>
+                        <ul class="text-xs text-zinc-300 space-y-1.5 list-disc pl-4">
+                            <li><strong>Reporte Markdown para IA:</strong> copia tu Readiness, cargas, RIR y check-out y pégalo en un chat de IA.</li>
+                            <li><strong>CSV para Google Sheets / Excel:</strong> rutina por semana o historial serie a serie.</li>
+                            <li><strong>Código JSON:</strong> envía tu perfil a tu entrenador para que lo abra en Modo Entrenador y te lo devuelva.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2 md:col-span-2">
+                        <h3 class="font-bold text-amber-300 text-sm">3. ¿Dónde se guardan mis datos?</h3>
+                        <p class="text-xs text-zinc-300 leading-relaxed">Todo se guarda <strong>en tu propio dispositivo</strong> (almacenamiento del navegador). Nadie más lo ve y funciona sin internet. Pero si borras los datos del navegador o cambias de teléfono, se pierden: usa <strong>Sync / Respaldo → Descargar respaldo</strong> de vez en cuando y guarda el archivo en Drive o tu correo. Para instalarla como app: en Android toca <em>⋮ → Instalar app</em>; en iPhone <em>Compartir → Añadir a pantalla de inicio</em>.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center text-[11px] text-zinc-600 space-x-3">
+                <span>Seba FitPro v<span id="appVersion"></span></span>
+                <button onclick="resetAllData()" class="text-zinc-600 hover:text-rose-400 underline">Borrar todos los datos</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- TEMPORIZADOR FLOTANTE -->
+    <div id="floatingTimer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-md bg-zinc-900/95 backdrop-blur-lg border border-zinc-700 rounded-2xl p-3 shadow-2xl transition-all duration-300" style="margin-bottom: env(safe-area-inset-bottom)">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-emerald-400 font-bold text-sm shrink-0">⏱️</div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span id="timerDisplay" class="font-mono text-lg sm:text-xl font-extrabold text-white tracking-wider" aria-live="off">02:00</span>
+                        <span id="timerStatusLabel" class="hidden sm:inline-block text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">Listo</span>
+                    </div>
+                    <p id="timerExerciseHint" class="text-[11px] text-zinc-400 truncate max-w-[150px] sm:max-w-[210px]">Descanso entre series</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="adjustTimer(-15)" class="px-2 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300">-15s</button>
+                <button onclick="adjustTimer(15)" class="px-2 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300">+15s</button>
+                <button onclick="toggleTimerPause()" id="timerPlayPauseBtn" class="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs">Iniciar</button>
+                <button onclick="resetTimer()" title="Reiniciar" aria-label="Reiniciar temporizador" class="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-xs">↺</button>
+            </div>
+        </div>
+        <div class="w-full h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
+            <div id="timerProgressBar" class="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 transition-all duration-500" style="width: 100%"></div>
+        </div>
+    </div>
+
+    <!-- MODAL 0: BIENVENIDA -->
+    <div id="onboardingModal" class="modal fixed inset-0 z-50 hidden bg-black/85 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="obTitle">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-zinc-950 font-extrabold text-2xl">SF</div>
+                <h3 id="obTitle" class="text-lg font-bold text-white">¡Bienvenido/a a Seba FitPro!</h3>
+                <p class="text-xs text-zinc-400">Rutina de 4 días con periodización y autoregulación. Tus datos se guardan solo en este dispositivo.</p>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label for="ob-name" class="text-zinc-400 block mb-1">Tu nombre</label>
+                    <input type="text" id="ob-name" maxlength="60" placeholder="Ej: Camila" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="ob-weight" class="text-zinc-400 block mb-1">Peso corporal</label>
+                        <input type="number" id="ob-weight" step="0.1" value="75" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="ob-unit" class="text-zinc-400 block mb-1">Unidad</label>
+                        <select id="ob-unit" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                            <option value="kg">Kilogramos (kg)</option>
+                            <option value="lb">Libras (lb)</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="text-[11px] text-zinc-500">💡 Los pesos iniciales son de ejemplo. En la Semana 1, el peso que pongas en la Serie 1 de cada ejercicio se convierte en tu peso base.</p>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="finishOnboarding()" id="obStartBtn" class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-sm">Comenzar</button>
+                <button onclick="triggerRestoreFile()" class="w-full py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold text-xs">Ya tengo un respaldo (.json)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: REEMPLAZO -->
+    <div id="replaceModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Equivalencia Biomecánica</span>
+                    <h3 id="replaceModalTitle" class="text-base md:text-lg font-bold text-white mt-0.5">Reemplazar Ejercicio</h3>
+                    <p id="replaceModalPattern" class="text-xs text-zinc-400"></p>
+                </div>
+                <button onclick="closeModal('replaceModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <div class="flex items-center gap-2 bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-xs">
+                <input type="checkbox" id="replacePermanentCheck" class="rounded bg-zinc-800 border-zinc-600 text-emerald-500 focus:ring-emerald-500">
+                <label for="replacePermanentCheck" class="text-zinc-300 cursor-pointer">Guardar este reemplazo de forma permanente en mi rutina (si no, solo para esta sesión)</label>
+            </div>
+            <div id="alternativesList" class="space-y-2.5"></div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeModal('replaceModal')" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold text-zinc-300">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: TÉCNICA -->
+    <div id="techniqueModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Guía de Ejecución & Biomecánica</span>
+                    <h3 id="techModalTitle" class="text-base md:text-lg font-bold text-white mt-0.5"></h3>
+                </div>
+                <button onclick="closeModal('techniqueModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
+                    <span class="font-bold text-emerald-400 block mb-1">🎯 Clave Técnica Principal:</span>
+                    <p id="techModalCue" class="text-zinc-200 leading-relaxed"></p>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-3 space-y-1.5">
+                    <span class="font-bold text-zinc-200 block">📋 Paso a Paso:</span>
+                    <p id="techModalSteps" class="text-zinc-400 leading-relaxed"></p>
+                </div>
+                <div class="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3">
+                    <span class="font-bold text-rose-400 block mb-1">⚠️ Error Común a Evitar:</span>
+                    <p id="techModalError" class="text-zinc-300 leading-relaxed"></p>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-between items-center gap-2">
+                <a id="techVideoLink" href="#" target="_blank" rel="noopener noreferrer" class="text-xs font-semibold text-cyan-400 hover:text-cyan-300">▶️ Ver videos de técnica</a>
+                <button onclick="closeModal('techniqueModal')" class="px-4 py-2 rounded-xl bg-emerald-500 text-zinc-950 font-bold text-xs">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CHECK-OUT -->
+    <div id="checkoutModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Cierre de Sesión</span>
+                    <h3 class="text-lg font-bold text-white mt-0.5">Check-out Post-Entrenamiento</h3>
+                </div>
+                <button onclick="closeModal('checkoutModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <p id="co-existing" class="hidden text-[11px] bg-amber-500/10 border border-amber-500/30 text-amber-300 rounded-xl p-2">Esta sesión ya está guardada: al guardar se actualizará el registro existente.</p>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5">
+                    <span class="text-[10px] text-zinc-400 block">Tonelaje Hoy</span>
+                    <span id="co-tonnage" class="text-sm md:text-base font-extrabold text-emerald-400">0 kg</span>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5">
+                    <span class="text-[10px] text-zinc-400 block">Series Listas</span>
+                    <span id="co-sets" class="text-sm md:text-base font-extrabold text-white">0/0</span>
+                </div>
+                <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-2.5">
+                    <span class="text-[10px] text-zinc-400 block">Récords (PR)</span>
+                    <span id="co-prs" class="text-sm md:text-base font-extrabold text-cyan-400">0</span>
+                </div>
+            </div>
+            <p id="co-prlist" class="text-[11px] text-cyan-300"></p>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <div class="flex justify-between font-semibold mb-1">
+                        <label for="co-rpe" class="text-zinc-300">🔥 RPE Global de la Sesión (Esfuerzo 1-10)</label>
+                        <span id="co-rpe-val" class="text-emerald-400 font-bold">8 / 10</span>
+                    </div>
+                    <input type="range" id="co-rpe" min="1" max="10" value="8" oninput="document.getElementById('co-rpe-val').textContent = this.value + ' / 10'" class="w-full">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="co-pump" class="text-zinc-400 block mb-1">💪 Congestión / Bombeo</label>
+                        <select id="co-pump" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-zinc-200">
+                            <option value="Alto / Excelente">Alto / Excelente</option>
+                            <option value="Moderado / Bueno" selected>Moderado / Bueno</option>
+                            <option value="Bajo / Plano">Bajo / Plano</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="co-pain" class="text-zinc-400 block mb-1">🩺 Molestia Articular</label>
+                        <select id="co-pain" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-zinc-200">
+                            <option value="Ninguna (0/10)" selected>Ninguna (0/10)</option>
+                            <option value="Leve molestia controlada">Leve molestia controlada</option>
+                            <option value="Dolor articular a revisar">Dolor articular a revisar</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="co-notes" class="text-zinc-400 block mb-1">📝 Notas de la Sesión</label>
+                    <textarea id="co-notes" rows="2" maxlength="2000" placeholder="Ej: Press banca muy sólido con pausa, subir +2.5 kg en Semana 2..." class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-2.5 text-zinc-200 focus:outline-none focus:border-emerald-500"></textarea>
+                </div>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 pt-2">
+                <button onclick="saveWorkoutSession(false)" id="saveSessionBtn" class="flex-1 py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition">Guardar en Historial</button>
+                <button onclick="saveWorkoutSession(true)" class="flex-1 py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-extrabold text-xs transition shadow-lg shadow-emerald-500/20">Guardar y Copiar Reporte IA 🤖</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: SYNC / RESPALDO -->
+    <div id="syncModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-xl w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Interoperabilidad & Respaldo</span>
+                    <h3 class="text-lg font-bold text-white mt-0.5">Compartir, Exportar y Respaldar</h3>
+                </div>
+                <button onclick="closeModal('syncModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+
+            <div class="bg-zinc-950 border border-amber-500/40 rounded-xl p-4 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                    <h4 class="font-bold text-amber-300 text-sm">💾 Respaldo completo (¡importante!)</h4>
+                    <span id="lastBackupText" class="text-[10px] text-zinc-500"></span>
+                </div>
+                <p class="text-xs text-zinc-400">Tus datos viven solo en este dispositivo. Descarga un archivo con todo (perfiles, rutina e historial) y guárdalo en Drive o tu correo. Sirve para cambiar de teléfono.</p>
+                <div class="flex gap-2">
+                    <button onclick="downloadBackup()" id="downloadBackupBtn" class="flex-1 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs transition">⬇️ Descargar respaldo</button>
+                    <button onclick="triggerRestoreFile()" class="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition">⬆️ Restaurar archivo</button>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 border border-emerald-500/30 rounded-xl p-4 space-y-2">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-emerald-400 text-sm">🤖 Alimentar un Chat de IA</h4>
+                    <span class="text-[10px] bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-full">Recomendado</span>
+                </div>
+                <p class="text-xs text-zinc-400">Copia un resumen estructurado de la sesión actual para pegarlo en el chat y recibir ajustes.</p>
+                <div class="flex gap-2">
+                    <button onclick="copyAIReport()" class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs transition">📋 Copiar Reporte de Sesión</button>
+                    <button onclick="shareReport()" id="shareReportBtn" class="hidden py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition">📤 Compartir</button>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2">
+                <h4 class="font-bold text-white text-sm">📊 Exportar Planilla CSV (Google Sheets / Excel)</h4>
+                <p class="text-xs text-zinc-400">Rutina con tus marcas por semana, o el historial serie a serie.</p>
+                <div class="flex gap-2">
+                    <button onclick="exportCSV()" class="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition border border-zinc-700">⬇️ CSV Rutina</button>
+                    <button onclick="exportHistoryCSV()" class="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-xs transition border border-zinc-700">⬇️ CSV Historial</button>
+                </div>
+            </div>
+
+            <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2.5">
+                <h4 class="font-bold text-cyan-400 text-sm">🔄 Código de Sincronización (Atleta ↔ Entrenador)</h4>
+                <p class="text-xs text-zinc-400">Envía este código del perfil actual a tu entrenador (o pega aquí el que te devolvió).</p>
+                <textarea id="syncJsonBox" rows="3" aria-label="Código JSON" class="w-full bg-zinc-900 border border-zinc-700 rounded-xl p-2 text-[11px] font-mono text-zinc-300 focus:outline-none focus:border-cyan-500"></textarea>
+                <div class="flex gap-2">
+                    <button onclick="copySyncCode()" class="flex-1 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-bold text-xs transition">Copiar Código JSON</button>
+                    <button onclick="importSyncCode()" id="importJsonBtn" class="flex-1 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs transition">Importar / Cargar JSON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <input type="file" id="restoreFileInput" accept="application/json,.json" class="hidden" onchange="handleRestoreFile(this)">
+
+    <!-- MODAL 5: PERFIL -->
+    <div id="profileModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Configuración Individual</span>
+                    <h3 class="text-lg font-bold text-white mt-0.5">Perfil del Atleta</h3>
+                </div>
+                <button onclick="closeModal('profileModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label for="prof-name" class="text-zinc-400 block mb-1">Nombre del Atleta</label>
+                    <input type="text" id="prof-name" maxlength="60" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="prof-weight" class="text-zinc-400 block mb-1">Peso Corporal</label>
+                        <input type="number" step="0.1" id="prof-weight" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="prof-unit" class="text-zinc-400 block mb-1">Unidad de Carga</label>
+                        <select id="prof-unit" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                            <option value="kg">Kilogramos (kg)</option>
+                            <option value="lb">Libras (lb)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="prof-rest-heavy" class="text-zinc-400 block mb-1">Descanso Básicos (seg)</label>
+                        <input type="number" step="15" id="prof-rest-heavy" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="prof-rest-iso" class="text-zinc-400 block mb-1">Descanso Aislamiento (seg)</label>
+                        <input type="number" step="15" id="prof-rest-iso" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2 text-zinc-300 cursor-pointer">
+                    <input type="checkbox" id="prof-apply-rest"> Aplicar estos descansos a todos los ejercicios de la rutina
+                </label>
+                <p class="text-[11px] text-zinc-500">Cambiar kg ↔ lb convierte automáticamente todas tus cargas.</p>
+            </div>
+            <div class="pt-2 flex flex-wrap justify-between gap-2 border-t border-zinc-800">
+                <div class="flex gap-2">
+                    <button onclick="createNewAthleteProfile()" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-cyan-400 font-semibold text-xs">+ Nuevo Atleta</button>
+                    <button onclick="deleteCurrentProfile()" id="deleteProfileBtn" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-rose-500/20 text-rose-400 font-semibold text-xs">Eliminar</button>
+                </div>
+                <button onclick="saveProfileSettings()" id="saveProfileBtn" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: AÑADIR EJERCICIO -->
+    <div id="addExerciseModal" class="modal fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true">
+        <div class="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                <h3 class="text-base font-bold text-white">Añadir Ejercicio al Día Actual</h3>
+                <button onclick="closeModal('addExerciseModal')" aria-label="Cerrar" class="p-1.5 rounded-lg bg-zinc-800 text-zinc-400 hover:text-white">✕</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label for="newEx-name" class="text-zinc-400 block mb-1">Nombre del Ejercicio</label>
+                    <input type="text" id="newEx-name" maxlength="120" placeholder="Ej: Face Pull en polea" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label for="newEx-category" class="text-zinc-400 block mb-1">Tipo</label>
+                        <select id="newEx-category" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                            <option value="heavy">Básico Pesado</option>
+                            <option value="moderate" selected>Multiarticular</option>
+                            <option value="isolation">Aislamiento / Core</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="newEx-pattern" class="text-zinc-400 block mb-1">Patrón (para reemplazos)</label>
+                        <select id="newEx-pattern" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white"></select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label for="newEx-sets" class="text-zinc-400 block mb-1">Series</label>
+                        <input type="number" id="newEx-sets" value="3" min="1" max="10" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="newEx-reps" class="text-zinc-400 block mb-1">Reps Obj.</label>
+                        <input type="text" id="newEx-reps" value="12-15" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                    <div>
+                        <label for="newEx-weight" class="text-zinc-400 block mb-1">Peso Base</label>
+                        <input type="number" step="0.5" id="newEx-weight" value="20" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                    </div>
+                </div>
+                <div>
+                    <label for="newEx-cue" class="text-zinc-400 block mb-1">Indicación Técnica</label>
+                    <input type="text" id="newEx-cue" maxlength="400" placeholder="Ej: Rotación externa al final, 1 seg pausa" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('addExerciseModal')" class="px-4 py-2 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-semibold">Cancelar</button>
+                <button onclick="confirmAddExercise()" id="confirmAddExBtn" class="px-4 py-2 rounded-xl bg-cyan-500 text-zinc-950 text-xs font-bold">Añadir</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
